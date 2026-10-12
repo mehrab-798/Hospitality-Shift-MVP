@@ -3,18 +3,23 @@ Hospitality Shift - FastAPI Backend
 Connects to Supabase PostgreSQL with Supabase Auth (JWT) protection.
 """
 import os
+import logging
 from decimal import Decimal
 from typing import Optional
 
+import psycopg2
 import requests
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Depends, Header, APIRouter
+from fastapi import FastAPI, HTTPException, Depends, Header, APIRouter, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from database import get_connection, get_cursor
+from database import get_connection, get_cursor, init_db
 
 load_dotenv()
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "")
@@ -31,6 +36,26 @@ app.add_middleware(
 )
 
 api_router = APIRouter(prefix="/api")
+
+
+@app.on_event("startup")
+def startup():
+    try:
+        init_db()
+        logger.info("Database schema verified")
+    except Exception as e:
+        logger.error(f"Database init failed: {e}")
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled error on {request.method} {request.url.path}: {exc}")
+    if isinstance(exc, psycopg2.Error):
+        logger.error(f"PostgreSQL error detail: {exc.pgerror}")
+        return JSONResponse(status_code=500, content={"detail": "A database error occurred. Please try again."})
+    if isinstance(exc, HTTPException):
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+    return JSONResponse(status_code=500, content={"detail": "An internal error occurred. Please try again."})
 
 
 class ShiftCreate(BaseModel):
@@ -129,6 +154,9 @@ def list_shifts(user: dict = Depends(get_current_user)):
         rows = cur.fetchall()
         cur.close()
         return [row_to_shift(r) for r in rows]
+    except psycopg2.Error as e:
+        logger.error(f"DB error listing shifts: {e.pgerror}")
+        raise HTTPException(status_code=500, detail="A database error occurred. Please try again.")
     finally:
         conn.close()
 
@@ -149,6 +177,10 @@ def create_shift(data: ShiftCreate, user: dict = Depends(get_current_user)):
         conn.commit()
         cur.close()
         return row_to_shift(row)
+    except psycopg2.Error as e:
+        conn.rollback()
+        logger.error(f"DB error creating shift: {e.pgerror}")
+        raise HTTPException(status_code=500, detail="A database error occurred. Please try again.")
     finally:
         conn.close()
 
@@ -195,6 +227,10 @@ def update_shift(shift_id: str, data: ShiftUpdate, user: dict = Depends(get_curr
         conn.commit()
         cur.close()
         return row_to_shift(row)
+    except psycopg2.Error as e:
+        conn.rollback()
+        logger.error(f"DB error updating shift: {e.pgerror}")
+        raise HTTPException(status_code=500, detail="A database error occurred. Please try again.")
     finally:
         conn.close()
 
@@ -216,6 +252,10 @@ def delete_shift(shift_id: str, user: dict = Depends(get_current_user)):
         conn.commit()
         cur.close()
         return {"message": "Shift deleted", "id": shift_id}
+    except psycopg2.Error as e:
+        conn.rollback()
+        logger.error(f"DB error deleting shift: {e.pgerror}")
+        raise HTTPException(status_code=500, detail="A database error occurred. Please try again.")
     finally:
         conn.close()
 
