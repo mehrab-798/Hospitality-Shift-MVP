@@ -3,6 +3,10 @@ Hospitality Shift - FastAPI Backend
 Connects to Supabase PostgreSQL with Supabase Auth (JWT) protection.
 """
 import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 import logging
 from decimal import Decimal
 from typing import Optional
