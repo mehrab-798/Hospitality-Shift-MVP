@@ -5,6 +5,8 @@
   },
   "rewrites": [
     { "source": "/api/(.*)", "destination": { "service": "backend" } },
-    { "source": "/(.*)", "destination": { "service": "app" } }
+    { "source": "/assets/(.*)", "destination": { "service": "app" } },
+    { "source": "/(favicon\\.svg|icons\\.svg)", "destination": { "service": "app" } },
+    { "source": "/(.*)", "destination": { "service": "app", "path": "/index.html" } }
   ]
 }
