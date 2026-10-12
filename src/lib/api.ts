@@ -19,11 +19,11 @@ async function request<T>(path: string, token: string, options: RequestInit = {}
 }
 
 export async function fetchShifts(token: string): Promise<Shift[]> {
-  return request<Shift[]>('/shifts', token);
+  return request<Shift[]>('/api/shifts', token);
 }
 
 export async function createShift(token: string, form: ShiftFormData): Promise<Shift> {
-  return request<Shift>('/shifts', token, {
+  return request<Shift>('/api/shifts', token, {
     method: 'POST',
     body: JSON.stringify({
       workplace: form.workplace.trim(),
@@ -37,7 +37,7 @@ export async function createShift(token: string, form: ShiftFormData): Promise<S
 }
 
 export async function updateShift(token: string, id: string, form: ShiftFormData): Promise<Shift> {
-  return request<Shift>(`/shifts/${id}`, token, {
+  return request<Shift>(`/api/shifts/${id}`, token, {
     method: 'PUT',
     body: JSON.stringify({
       workplace: form.workplace.trim(),
@@ -51,5 +51,5 @@ export async function updateShift(token: string, id: string, form: ShiftFormData
 }
 
 export async function deleteShift(token: string, id: string): Promise<void> {
-  await request(`/shifts/${id}`, token, { method: 'DELETE' });
+  await request(`/api/shifts/${id}`, token, { method: 'DELETE' });
 }

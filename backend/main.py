@@ -8,7 +8,7 @@ from typing import Optional
 
 import requests
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Depends, Header
+from fastapi import FastAPI, HTTPException, Depends, Header, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -29,6 +29,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+api_router = APIRouter(prefix="/api")
 
 
 class ShiftCreate(BaseModel):
@@ -102,7 +104,7 @@ def root():
     return {"message": "Hospitality Shift API", "docs": "/docs", "health": "/health"}
 
 
-@app.get("/health")
+@api_router.get("/health")
 def health():
     try:
         conn = get_connection()
@@ -115,7 +117,7 @@ def health():
         return {"status": "unhealthy", "database": str(e)}
 
 
-@app.get("/shifts", response_model=list[ShiftResponse])
+@api_router.get("/shifts", response_model=list[ShiftResponse])
 def list_shifts(user: dict = Depends(get_current_user)):
     conn = get_connection()
     try:
@@ -131,7 +133,7 @@ def list_shifts(user: dict = Depends(get_current_user)):
         conn.close()
 
 
-@app.post("/shifts", response_model=ShiftResponse, status_code=201)
+@api_router.post("/shifts", response_model=ShiftResponse, status_code=201)
 def create_shift(data: ShiftCreate, user: dict = Depends(get_current_user)):
     conn = get_connection()
     try:
@@ -151,7 +153,7 @@ def create_shift(data: ShiftCreate, user: dict = Depends(get_current_user)):
         conn.close()
 
 
-@app.put("/shifts/{shift_id}", response_model=ShiftResponse)
+@api_router.put("/shifts/{shift_id}", response_model=ShiftResponse)
 def update_shift(shift_id: str, data: ShiftUpdate, user: dict = Depends(get_current_user)):
     conn = get_connection()
     try:
@@ -197,7 +199,7 @@ def update_shift(shift_id: str, data: ShiftUpdate, user: dict = Depends(get_curr
         conn.close()
 
 
-@app.delete("/shifts/{shift_id}")
+@api_router.delete("/shifts/{shift_id}")
 def delete_shift(shift_id: str, user: dict = Depends(get_current_user)):
     conn = get_connection()
     try:
@@ -216,3 +218,6 @@ def delete_shift(shift_id: str, user: dict = Depends(get_current_user)):
         return {"message": "Shift deleted", "id": shift_id}
     finally:
         conn.close()
+
+
+app.include_router(api_router)
