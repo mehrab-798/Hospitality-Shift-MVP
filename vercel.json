@@ -1,12 +1,18 @@
 {
-  "services": {
-    "app": { "root": "./" },
-    "backend": { "root": "backend/", "entrypoint": "main:app" }
-  },
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": { "service": "backend" } },
-    { "source": "/assets/(.*)", "destination": { "service": "app" } },
-    { "source": "/(favicon\\.svg|icons\\.svg)", "destination": { "service": "app" } },
-    { "source": "/(.*)", "destination": { "service": "app", "path": "/index.html" } }
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist" }
+    },
+    {
+      "src": "backend/main.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/backend/main.py" },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
