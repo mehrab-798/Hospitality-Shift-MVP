@@ -1,6 +1,6 @@
 import type { Shift, ShiftFormData } from '../types';
 
-const API_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000';
+const API_URL = (import.meta.env.VITE_API_URL as string) || '';
 
 async function request<T>(path: string, token: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
